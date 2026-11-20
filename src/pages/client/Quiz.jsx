@@ -7,57 +7,71 @@ import ItemIcon from '../../components/ItemIcon.jsx';
 import toast from 'react-hot-toast';
 
 const DIFFICULTIES = [
-  { key: 'easy', label: '🟢 Easy', time: 30, xp: 10, desc: 'Multiple choice — pick the output' },
-  { key: 'medium', label: '🟡 Medium', time: 20, xp: 20, desc: 'Pick the main ingredient' },
-  { key: 'hard', label: '🔴 Hard', time: 15, xp: 40, desc: 'No hints — recall all ingredients' },
+  { key: 'easy', label: '🟢 Easy', time: 30, xp: 10, desc: 'How many items does a recipe yield?' },
+  { key: 'medium', label: '🟡 Medium', time: 20, xp: 20, desc: 'Identify the recipe from its crafting grid' },
+  { key: 'hard', label: '🔴 Hard', time: 15, xp: 40, desc: 'Recall the correct ingredients from memory' },
 ];
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
+function getUniqueIngredients(r) { return [...new Set(r.grid.filter(Boolean))]; }
+
 function generateQuestion(recipes, diff) {
   const recipe = recipes[Math.floor(Math.random() * recipes.length)];
   const outputItem = ITEMS[recipe.output];
-  const allOutputs = Object.values(ITEMS);
 
   if (diff === 'easy') {
-    // MCQ: what does this recipe produce?
-    const correct = outputItem;
-    const wrongs = shuffle(allOutputs.filter(i => i.id !== recipe.output)).slice(0, 3);
+    // Easy: Given the recipe name, how many does it produce?
+    const correct = recipe.outputCount;
+    const possibleCounts = [...new Set(recipes.map(r => r.outputCount))].filter(c => c !== correct);
+    const wrongs = shuffle(possibleCounts).slice(0, 3);
+    while (wrongs.length < 3) {
+      const fallback = [1, 2, 3, 4, 6, 8, 16].find(n => n !== correct && !wrongs.includes(n));
+      if (fallback) wrongs.push(fallback); else break;
+    }
     return {
       type: 'easy',
-      question: `What does this recipe craft?`,
-      grid: recipe.grid,
-      options: shuffle([correct, ...wrongs]),
-      answer: correct.id,
+      question: `How many ${recipe.name} does one craft produce?`,
+      options: shuffle([correct, ...wrongs]).map(n => ({ id: String(n), name: `${n} item${n > 1 ? 's' : ''}` })),
+      answer: String(correct),
       recipe,
     };
   }
 
   if (diff === 'medium') {
-    // Pick the key ingredient
-    const ingredients = recipe.grid.filter(Boolean);
-    const mainId = ingredients[0];
-    const mainItem = ITEMS[mainId];
-    const wrongs = shuffle(Object.values(ITEMS).filter(i => !ingredients.includes(i.id))).slice(0, 3);
+    // Medium: Show the crafting grid, ask what it produces
+    const correct = outputItem;
+    const wrongItems = shuffle(
+      recipes.filter(r => r.id !== recipe.id).map(r => ITEMS[r.output]).filter(Boolean)
+    ).slice(0, 3);
     return {
       type: 'medium',
-      question: `Which item is used to craft ${recipe.name}?`,
+      question: `What does this crafting pattern make?`,
+      grid: recipe.grid,
+      options: shuffle([correct, ...wrongItems]),
+      answer: correct.id,
       recipe,
-      options: shuffle([mainItem, ...wrongs]),
-      answer: mainId,
     };
   }
 
-  // Hard: given the output, guess what you craft
-  const decoys = shuffle(recipes.filter(r => r.id !== recipe.id)).slice(0, 3);
+  // Hard: Given the recipe name, which ingredients are needed?
+  const correctIngredients = getUniqueIngredients(recipe);
+  const correctLabel = correctIngredients.map(id => ITEMS[id]?.name || id).sort().join(', ');
+  const decoyRecipes = shuffle(recipes.filter(r => {
+    const label = getUniqueIngredients(r).map(id => ITEMS[id]?.name || id).sort().join(', ');
+    return label !== correctLabel && r.id !== recipe.id;
+  })).slice(0, 3);
+
   return {
     type: 'hard',
-    question: `Which recipe produces ${recipe.name}?`,
-    options: shuffle([recipe, ...decoys]).map(r => ({
-      id: r.id,
-      name: r.name,
-      emoji: ITEMS[r.output]?.emoji,
-    })),
+    question: `Which ingredients are needed to craft ${recipe.name}?`,
+    options: shuffle([
+      { id: recipe.id, name: correctLabel },
+      ...decoyRecipes.map(r => ({
+        id: r.id,
+        name: getUniqueIngredients(r).map(id => ITEMS[id]?.name || id).sort().join(', '),
+      })),
+    ]),
     answer: recipe.id,
     recipe,
   };
@@ -244,14 +258,14 @@ export default function Quiz() {
           <span className="badge badge-stone" style={{ textTransform: 'capitalize' }}>{diff}</span>
         </div>
 
-        {/* Grid preview for easy */}
+        {/* Grid preview for medium */}
         {question.grid && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 44px)', gridTemplateRows: 'repeat(3, 44px)', gap: 3 }}>
               {question.grid.map((cell, i) => {
                 const item = cell ? ITEMS[cell] : null;
                 return (
-                  <div key={i} style={{ width: 44, height: 44, background: item ? 'rgba(57,255,20,0.08)' : 'rgba(20,20,30,0.8)', border: `1.5px solid ${item ? 'rgba(57,255,20,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }} title={item?.name}>
+                  <div key={i} style={{ width: 44, height: 44, background: item ? 'rgba(57,255,20,0.08)' : 'rgba(20,20,30,0.8)', border: `1.5px solid ${item ? 'rgba(57,255,20,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
                     {item ? <ItemIcon itemId={cell} size={28} /> : ''}
                   </div>
                 );
@@ -265,7 +279,7 @@ export default function Quiz() {
           <div className="q-text">{question.question}</div>
         </div>
 
-        <div className={question.type === 'hard' ? '' : 'quiz-options'}>
+        <div className={question.type === 'medium' ? 'quiz-options' : ''}>
           {question.options.map(opt => {
             const optId = opt.id;
             const isCorrect = optId === question.answer;
@@ -275,16 +289,17 @@ export default function Quiz() {
               if (isCorrect) cls += ' correct';
               else if (isSelected) cls += ' wrong';
             }
+            const isFullWidth = question.type === 'easy' || question.type === 'hard';
             return (
               <button
                 key={optId}
                 className={cls}
                 disabled={selected !== null}
                 onClick={() => handleAnswer(optId)}
-                style={{ marginBottom: question.type === 'hard' ? 8 : 0, width: question.type === 'hard' ? '100%' : undefined }}
+                style={{ marginBottom: isFullWidth ? 8 : 0, width: isFullWidth ? '100%' : undefined }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 40, width: 40, flexShrink: 0 }}>
-                  <ItemIcon itemId={opt.id} size={32} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 40, width: 40, flexShrink: 0, fontSize: '1.4rem' }}>
+                  {question.type === 'easy' ? '🔢' : question.type === 'hard' ? '📋' : <ItemIcon itemId={opt.id} size={32} />}
                 </div>
                 <span>{opt.name || ITEMS[opt.id]?.name}</span>
               </button>

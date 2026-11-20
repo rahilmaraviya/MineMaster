@@ -54,6 +54,28 @@
       "active": true,
       "xp": 0,
       "quizHistory": []
+    },
+    {
+      "id": "user-1776227008337",
+      "name": "nvidia",
+      "email": "raishnvidia@gmail.com",
+      "password": "123456",
+      "role": "client",
+      "createdAt": "2026-04-15T04:23:28.337Z",
+      "active": true,
+      "xp": 0,
+      "quizHistory": []
+    },
+    {
+      "id": "user-1776228285999",
+      "name": "r",
+      "email": "raishaemad.sipai143076@marwadiuniversity.ac.in",
+      "password": "123455",
+      "role": "client",
+      "createdAt": "2026-04-15T04:44:45.999Z",
+      "active": true,
+      "xp": 0,
+      "quizHistory": []
     }
   ],
   "recipes": [
