@@ -14,9 +14,14 @@ const useAuthStore = create((set, get) => ({
     if (user) {
       set({ currentUser: JSON.parse(user), isAuthenticated: true });
     }
+    // Also fetch all users from backend so admin pages have data
+    get().fetchAllUsers();
   },
 
-  // Fetch all users to populate the state
+  // Synchronous getter for the users array (used by admin pages)
+  getAllUsers: () => get().users,
+
+  // Fetch all users from the backend
   fetchAllUsers: async () => {
     try {
       const res = await fetch(API_URL);

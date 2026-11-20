@@ -60,7 +60,8 @@ function AdminLayout({ children }) {
 
 export default function App() {
   const init = useRecipeStore(s => s.init);
-  useEffect(() => { init(); }, [init]);
+  const initAuth = useAuthStore(s => s.initAuth);
+  useEffect(() => { initAuth(); init(); }, [init, initAuth]);
 
   return (
     <BrowserRouter>
