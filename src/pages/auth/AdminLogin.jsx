@@ -10,9 +10,9 @@ export default function AdminLogin() {
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); clearError(); };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const res = login(form.email, form.password, 'admin');
+    const res = await login(form.email, form.password, 'admin');
     if (res.success) { toast.success('Admin access granted! 🛠️'); navigate('/admin'); }
   };
 

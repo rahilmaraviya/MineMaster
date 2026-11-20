@@ -11,15 +11,15 @@ export default function ClientLogin() {
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); clearError(); };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const res = login(form.email, form.password, 'client');
+    const res = await login(form.email, form.password, 'client');
     if (res.success) { toast.success('Welcome back! ⛏️'); navigate('/'); }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    const res = register(form.name, form.email, form.password);
+    const res = await register(form.name, form.email, form.password);
     if (res.success) { toast.success('Account created! Please login.'); setTab('login'); }
   };
 
