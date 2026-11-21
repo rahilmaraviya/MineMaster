@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-const API_URL = 'http://localhost:3001/users';
+const API_URL = "http://localhost:5000/api/users";
 
 const useAuthStore = create((set, get) => ({
   currentUser: null,
@@ -10,7 +10,7 @@ const useAuthStore = create((set, get) => ({
 
   // Simple load on startup
   initAuth: () => {
-    const user = localStorage.getItem('minemaster_user');
+    const user = localStorage.getItem("minemaster_user");
     if (user) {
       set({ currentUser: JSON.parse(user), isAuthenticated: true });
     }
@@ -41,28 +41,33 @@ const useAuthStore = create((set, get) => ({
 
       // 2. Find matching user
       const user = users.find(
-        u => u.email.toLowerCase() === email.toLowerCase() &&
-             u.password === password &&
-             u.role === role &&
-             u.active
+        (u) =>
+          u.email.toLowerCase() === email.toLowerCase() &&
+          u.password === password &&
+          u.role === role &&
+          u.active,
       );
 
       if (user) {
-        localStorage.setItem('minemaster_user', JSON.stringify(user));
+        localStorage.setItem("minemaster_user", JSON.stringify(user));
         set({ currentUser: user, isAuthenticated: true, error: null });
         return { success: true };
       }
-      
+
       // Error handling
-      const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!exists) set({ error: 'No account found with this email.' });
-      else if (exists.role !== role) set({ error: `This account is not a ${role}. Try the other login.` });
-      else if (!exists.active) set({ error: 'Account is deactivated. Contact admin.' });
-      else set({ error: 'Wrong password.' });
-      
+      const exists = users.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase(),
+      );
+      if (!exists) set({ error: "No account found with this email." });
+      else if (exists.role !== role)
+        set({ error: `This account is not a ${role}. Try the other login.` });
+      else if (!exists.active)
+        set({ error: "Account is deactivated. Contact admin." });
+      else set({ error: "Wrong password." });
+
       return { success: false };
     } catch (err) {
-      set({ error: 'Could not connect to database.' });
+      set({ error: "Could not connect to database." });
       return { success: false };
     }
   },
@@ -71,11 +76,11 @@ const useAuthStore = create((set, get) => ({
     try {
       const { users } = get();
       if (!name.trim() || !email.trim() || !password.trim()) {
-        set({ error: 'All fields are required.' });
+        set({ error: "All fields are required." });
         return { success: false };
       }
-      if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-        set({ error: 'Email already registered.' });
+      if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+        set({ error: "Email already registered." });
         return { success: false };
       }
 
@@ -84,7 +89,7 @@ const useAuthStore = create((set, get) => ({
         name: name.trim(),
         email: email.toLowerCase(),
         password,
-        role: 'client',
+        role: "client",
         createdAt: new Date().toISOString(),
         active: true,
         xp: 0,
@@ -93,23 +98,23 @@ const useAuthStore = create((set, get) => ({
 
       // Create user in db.json
       const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
       });
-      
-      if (!res.ok) throw new Error('Failed to register');
-      
-      set(state => ({ users: [...state.users, newUser], error: null }));
+
+      if (!res.ok) throw new Error("Failed to register");
+
+      set((state) => ({ users: [...state.users, newUser], error: null }));
       return { success: true };
     } catch (err) {
-      set({ error: 'Failed to connect to database.' });
+      set({ error: "Failed to connect to database." });
       return { success: false };
     }
   },
 
   logout: () => {
-    localStorage.removeItem('minemaster_user');
+    localStorage.removeItem("minemaster_user");
     set({ currentUser: null, isAuthenticated: false, error: null });
   },
 
@@ -117,15 +122,15 @@ const useAuthStore = create((set, get) => ({
     const { currentUser } = get();
     if (!currentUser) return;
     const updated = { ...currentUser, xp: (currentUser.xp || 0) + amount };
-    
+
     // Update db.json
     try {
       await fetch(`${API_URL}/${currentUser.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ xp: updated.xp })
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ xp: updated.xp }),
       });
-      localStorage.setItem('minemaster_user', JSON.stringify(updated));
+      localStorage.setItem("minemaster_user", JSON.stringify(updated));
       set({ currentUser: updated });
     } catch (err) {
       console.error(err);
@@ -137,14 +142,14 @@ const useAuthStore = create((set, get) => ({
     if (!currentUser) return;
     const history = [record, ...(currentUser.quizHistory || [])].slice(0, 20);
     const updated = { ...currentUser, quizHistory: history };
-    
+
     try {
       await fetch(`${API_URL}/${currentUser.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quizHistory: history })
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quizHistory: history }),
       });
-      localStorage.setItem('minemaster_user', JSON.stringify(updated));
+      localStorage.setItem("minemaster_user", JSON.stringify(updated));
       set({ currentUser: updated });
     } catch (err) {
       console.error(err);
@@ -153,28 +158,28 @@ const useAuthStore = create((set, get) => ({
 
   // Admin actions
   toggleUserActive: async (userId) => {
-    const user = get().users.find(u => u.id === userId);
+    const user = get().users.find((u) => u.id === userId);
     if (!user) return;
-    
+
     await fetch(`${API_URL}/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: !user.active })
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: !user.active }),
     });
     get().fetchAllUsers();
   },
 
   changeUserRole: async (userId, role) => {
     await fetch(`${API_URL}/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role })
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
     });
     get().fetchAllUsers();
   },
 
   deleteUser: async (userId) => {
-    await fetch(`${API_URL}/${userId}`, { method: 'DELETE' });
+    await fetch(`${API_URL}/${userId}`, { method: "DELETE" });
     get().fetchAllUsers();
   },
 
