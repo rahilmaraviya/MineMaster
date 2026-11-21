@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-const API_URL = "http://localhost:5000/api/users";
+const API_URL = "https://minemaster-5vxe.onrender.com";
 
 const useAuthStore = create((set, get) => ({
   currentUser: null,

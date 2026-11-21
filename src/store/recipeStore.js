@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-const API_URL = "http://localhost:5000/api/recipes";
+const API_URL = "https://minemaster-5vxe.onrender.com";
 
 const useRecipeStore = create((set, get) => ({
   recipes: [],
