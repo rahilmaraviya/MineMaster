@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-const API_URL = "https://minemaster-5vxe.onrender.com";
+const API_URL = "https://minemaster-5vxe.onrender.com/api/users";
 
 const useAuthStore = create((set, get) => ({
   currentUser: null,
@@ -34,7 +34,7 @@ const useAuthStore = create((set, get) => ({
 
   login: async (email, password, role) => {
     try {
-      // 1. Fetch current users from our db.json
+      // 1. Fetch current users from backend
       const res = await fetch(API_URL);
       const users = await res.json();
       set({ users });
@@ -96,7 +96,7 @@ const useAuthStore = create((set, get) => ({
         quizHistory: [],
       };
 
-      // Create user in db.json
+      // Create user in backend
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,7 +123,6 @@ const useAuthStore = create((set, get) => ({
     if (!currentUser) return;
     const updated = { ...currentUser, xp: (currentUser.xp || 0) + amount };
 
-    // Update db.json
     try {
       await fetch(`${API_URL}/${currentUser.id}`, {
         method: "PATCH",
